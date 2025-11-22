@@ -1,0 +1,16 @@
+[package]
+name = "gbln"
+version = "0.1.0"
+edition = "2021"
+authors = ["Vivian Voss <ask+gbln@vvoss.dev>"]
+description = "GBLN (Goblin Bounded Lean Notation) - Type-safe LLM-native data format"
+repository = "https://github.com/gbln-org/gbln-rust"
+homepage = "https://github.com/gbln-org/gbln"
+license = "Apache-2.0"
+keywords = ["parser", "serialization", "llm", "type-safe", "validation"]
+categories = ["parser-implementations", "encoding"]
+readme = "README.md"
+
+[dependencies]
+
+[dev-dependencies]
