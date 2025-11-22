@@ -1,14 +1,26 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
+//! GBLN (Goblin Bounded Lean Notation)
+//!
+//! A type-safe, LLM-native data serialisation format with parse-time validation.
+
+pub mod error;
+pub mod types;
+pub mod value;
+
+pub use error::{Error, ErrorKind};
+pub use types::TypeHint;
+pub use value::Value;
+
+/// Parse a GBLN string into a Value
+pub fn parse(_input: &str) -> Result<Value, Error> {
+    todo!("Parser implementation coming next")
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+/// Serialise a Value to compact GBLN string
+pub fn to_string(_value: &Value) -> String {
+    todo!("Serialiser implementation coming next")
+}
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+/// Serialise a Value to formatted GBLN string (with indentation)
+pub fn to_string_pretty(_value: &Value) -> String {
+    todo!("Serialiser implementation coming next")
 }
