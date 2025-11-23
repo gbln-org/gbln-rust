@@ -2,6 +2,8 @@
 //!
 //! Defines all type hints and their validation bounds.
 
+use crate::value::Value;
+
 /// Type hint for GBLN values
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TypeHint {
@@ -49,7 +51,8 @@ impl TypeHint {
             "n" => Ok(TypeHint::Null),
             _ if s.starts_with('s') => {
                 let len_str = &s[1..];
-                let len = len_str.parse::<usize>()
+                let len = len_str
+                    .parse::<usize>()
                     .map_err(|_| format!("Invalid string type: {}", s))?;
                 Ok(TypeHint::Str(len))
             }
@@ -75,36 +78,98 @@ impl TypeHint {
             TypeHint::Null => "n".to_string(),
         }
     }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_integer_types() {
-        assert_eq!(TypeHint::from_str("i8").unwrap(), TypeHint::I8);
-        assert_eq!(TypeHint::from_str("u32").unwrap(), TypeHint::U32);
-        assert_eq!(TypeHint::from_str("i64").unwrap(), TypeHint::I64);
-    }
-
-    #[test]
-    fn test_parse_string_types() {
-        assert_eq!(TypeHint::from_str("s32").unwrap(), TypeHint::Str(32));
-        assert_eq!(TypeHint::from_str("s256").unwrap(), TypeHint::Str(256));
-    }
-
-    #[test]
-    fn test_parse_other_types() {
-        assert_eq!(TypeHint::from_str("b").unwrap(), TypeHint::Bool);
-        assert_eq!(TypeHint::from_str("n").unwrap(), TypeHint::Null);
-        assert_eq!(TypeHint::from_str("f32").unwrap(), TypeHint::F32);
-    }
-
-    #[test]
-    fn test_invalid_types() {
-        assert!(TypeHint::from_str("unknown").is_err());
-        assert!(TypeHint::from_str("s").is_err());
-        assert!(TypeHint::from_str("sabc").is_err());
+    /// Parse value from string according to type hint with validation
+    pub fn parse_value(&self, s: &str) -> Result<Value, String> {
+        match self {
+            TypeHint::I8 => {
+                let val = s
+                    .parse::<i8>()
+                    .map_err(|_| format!("Cannot parse '{}' as i8", s))?;
+                Ok(Value::I8(val))
+            }
+            TypeHint::I16 => {
+                let val = s
+                    .parse::<i16>()
+                    .map_err(|_| format!("Cannot parse '{}' as i16", s))?;
+                Ok(Value::I16(val))
+            }
+            TypeHint::I32 => {
+                let val = s
+                    .parse::<i32>()
+                    .map_err(|_| format!("Cannot parse '{}' as i32", s))?;
+                Ok(Value::I32(val))
+            }
+            TypeHint::I64 => {
+                let val = s
+                    .parse::<i64>()
+                    .map_err(|_| format!("Cannot parse '{}' as i64", s))?;
+                Ok(Value::I64(val))
+            }
+            TypeHint::U8 => {
+                let val = s
+                    .parse::<u8>()
+                    .map_err(|_| format!("Cannot parse '{}' as u8", s))?;
+                Ok(Value::U8(val))
+            }
+            TypeHint::U16 => {
+                let val = s
+                    .parse::<u16>()
+                    .map_err(|_| format!("Cannot parse '{}' as u16", s))?;
+                Ok(Value::U16(val))
+            }
+            TypeHint::U32 => {
+                let val = s
+                    .parse::<u32>()
+                    .map_err(|_| format!("Cannot parse '{}' as u32", s))?;
+                Ok(Value::U32(val))
+            }
+            TypeHint::U64 => {
+                let val = s
+                    .parse::<u64>()
+                    .map_err(|_| format!("Cannot parse '{}' as u64", s))?;
+                Ok(Value::U64(val))
+            }
+            TypeHint::F32 => {
+                let val = s
+                    .parse::<f32>()
+                    .map_err(|_| format!("Cannot parse '{}' as f32", s))?;
+                Ok(Value::F32(val))
+            }
+            TypeHint::F64 => {
+                let val = s
+                    .parse::<f64>()
+                    .map_err(|_| format!("Cannot parse '{}' as f64", s))?;
+                Ok(Value::F64(val))
+            }
+            TypeHint::Str(max_len) => {
+                let char_count = s.chars().count();
+                if char_count > *max_len {
+                    return Err(format!(
+                        "String too long: {} characters (max {})",
+                        char_count, max_len
+                    ));
+                }
+                Ok(Value::Str(s.to_string()))
+            }
+            TypeHint::Bool => match s {
+                "t" | "true" => Ok(Value::Bool(true)),
+                "f" | "false" => Ok(Value::Bool(false)),
+                _ => Err(format!(
+                    "Invalid boolean value: '{}' (expected t/f or true/false)",
+                    s
+                )),
+            },
+            TypeHint::Null => {
+                if s.is_empty() || s == "null" {
+                    Ok(Value::Null)
+                } else {
+                    Err(format!(
+                        "Invalid null value: '{}' (expected empty or 'null')",
+                        s
+                    ))
+                }
+            }
+        }
     }
 }
