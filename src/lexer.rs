@@ -98,6 +98,11 @@ impl<'a> Lexer<'a> {
                 self.advance();
                 Ok(Token::RAngle)
             }
+            Some('-') => {
+                // Hyphens can appear in identifiers (rust-fan) or as negative numbers (-42)
+                // Since we now allow hyphens in read_identifier(), just treat it like any identifier start
+                self.read_identifier()
+            }
             Some(ch) if is_identifier_start(ch) || ch.is_ascii_digit() => self.read_identifier(),
             Some(ch) => Err(Error::new(
                 ErrorKind::UnexpectedCharacter,
@@ -170,9 +175,16 @@ impl<'a> Lexer<'a> {
             ident.push(ch);
         }
 
-        // Read remaining characters (alphanumeric + underscore)
+        // Read remaining characters (alphanumeric + underscore + hyphen + optional decimal point for floats)
+        let mut has_dot = false;
         while let Some(ch) = self.peek_char() {
-            if ch.is_ascii_alphanumeric() || ch == '_' {
+            if ch.is_ascii_alphanumeric() || ch == '_' || ch == '-' {
+                ident.push(ch);
+                self.advance();
+            } else if ch == '.' && !has_dot && ident.chars().all(|c| c.is_ascii_digit() || c == '-')
+            {
+                // Allow one decimal point in numeric tokens for float support
+                has_dot = true;
                 ident.push(ch);
                 self.advance();
             } else {

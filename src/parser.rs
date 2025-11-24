@@ -85,7 +85,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    /// Parse keyed value (object or typed array)
+    /// Parse keyed value (object, typed/untyped single value, or typed array)
     fn parse_keyed_value(&mut self) -> Result<Value, Error> {
         let key = match &self.current_token {
             Token::Key(k) => k.clone(),
@@ -102,12 +102,28 @@ impl<'a> Parser<'a> {
         self.advance()?;
 
         match &self.current_token {
+            Token::LParen => {
+                // Untyped single value: key(value)
+                let value = self.parse_untyped_single_value()?;
+                // Wrap in object with single field
+                let mut obj = HashMap::new();
+                obj.insert(key, value);
+                Ok(Value::Object(obj))
+            }
             Token::LBrace => {
                 // Object: key{...}
                 let inner_obj = self.parse_object()?;
                 // Wrap with the key
                 let mut obj = HashMap::new();
                 obj.insert(key, inner_obj);
+                Ok(Value::Object(obj))
+            }
+            Token::LBracket => {
+                // Untyped array: key[...]
+                let values = self.parse_untyped_array_content()?;
+                // Wrap in object with single field
+                let mut obj = HashMap::new();
+                obj.insert(key, Value::Array(values));
                 Ok(Value::Object(obj))
             }
             Token::LAngle => {
@@ -144,7 +160,7 @@ impl<'a> Parser<'a> {
                 self.lexer.current_line(),
                 self.lexer.current_column(),
                 format!(
-                    "Expected '{{' or '<' after key, found {:?}",
+                    "Expected '(', '[', '{{', or '<' after key, found {:?}",
                     self.current_token
                 ),
             )),
@@ -177,7 +193,7 @@ impl<'a> Parser<'a> {
         Ok(Value::Object(fields))
     }
 
-    /// Parse single object field: key<type>(value) or key{...}
+    /// Parse single object field: key(value), key<type>(value), key{...}, key[...], or key<type>[...]
     fn parse_object_field(&mut self) -> Result<(String, Value), Error> {
         let key = match &self.current_token {
             Token::Key(k) => k.clone(),
@@ -195,6 +211,11 @@ impl<'a> Parser<'a> {
 
         // Check what follows the key
         match &self.current_token {
+            Token::LParen => {
+                // Untyped single value: key(value)
+                let value = self.parse_untyped_single_value()?;
+                Ok((key, value))
+            }
             Token::LBrace => {
                 // Nested object: key{...}
                 let value = self.parse_object()?;
@@ -206,17 +227,37 @@ impl<'a> Parser<'a> {
                 Ok((key, value))
             }
             Token::LAngle => {
-                // Typed value: key<type>(value)
+                // Typed value or typed array: key<type>(value) or key<type>[...]
                 let type_hint = self.parse_type_hint()?;
-                let value = self.parse_single_value_content(&type_hint)?;
-                Ok((key, value))
+
+                match &self.current_token {
+                    Token::LParen => {
+                        // Typed single value: key<type>(value)
+                        let value = self.parse_single_value_content(&type_hint)?;
+                        Ok((key, value))
+                    }
+                    Token::LBracket => {
+                        // Typed array: key<type>[...]
+                        let values = self.parse_typed_array_content(&type_hint)?;
+                        Ok((key, Value::Array(values)))
+                    }
+                    _ => Err(Error::new(
+                        ErrorKind::UnexpectedToken,
+                        self.lexer.current_line(),
+                        self.lexer.current_column(),
+                        format!(
+                            "Expected '(' or '[' after type hint, found {:?}",
+                            self.current_token
+                        ),
+                    )),
+                }
             }
             _ => Err(Error::new(
                 ErrorKind::UnexpectedToken,
                 self.lexer.current_line(),
                 self.lexer.current_column(),
                 format!(
-                    "Expected '<', '{{', or '[' after key, found {:?}",
+                    "Expected '(', '<', '{{', or '[' after key, found {:?}",
                     self.current_token
                 ),
             )),
@@ -283,6 +324,59 @@ impl<'a> Parser<'a> {
         })
     }
 
+    /// Parse untyped single value: (value) with type inference
+    fn parse_untyped_single_value(&mut self) -> Result<Value, Error> {
+        // Check for LParen but DON'T call advance() - we need to read raw content
+        if !matches!(self.current_token, Token::LParen) {
+            return Err(Error::new(
+                ErrorKind::UnexpectedToken,
+                self.lexer.current_line(),
+                self.lexer.current_column(),
+                format!("Expected '(', found {:?}", self.current_token),
+            ));
+        }
+
+        // Read raw content directly from lexer
+        let content = self.lexer.read_parenthesized_content()?;
+
+        // Refresh current_token after raw read
+        self.current_token = self.lexer.next_token()?;
+
+        // Infer type from content
+        self.infer_value(&content)
+    }
+
+    /// Infer and parse value from string content
+    fn infer_value(&self, content: &str) -> Result<Value, Error> {
+        // Try parsing in order of specificity
+
+        // 1. Check for null/empty
+        if content.is_empty() || content == "null" {
+            return Ok(Value::Null);
+        }
+
+        // 2. Check for boolean
+        if content == "t" || content == "true" {
+            return Ok(Value::Bool(true));
+        }
+        if content == "f" || content == "false" {
+            return Ok(Value::Bool(false));
+        }
+
+        // 3. Try as integer
+        if let Ok(n) = content.parse::<i64>() {
+            return Ok(Value::I64(n));
+        }
+
+        // 4. Try as float
+        if let Ok(n) = content.parse::<f64>() {
+            return Ok(Value::F64(n));
+        }
+
+        // 5. Default to string (no length limit without type hint)
+        Ok(Value::Str(content.to_string()))
+    }
+
     /// Parse array: [...]
     fn parse_array(&mut self) -> Result<Value, Error> {
         self.expect(Token::LBracket)?;
@@ -298,16 +392,26 @@ impl<'a> Parser<'a> {
         Ok(Value::Array(items))
     }
 
-    /// Parse single array item (could be typed value or object)
+    /// Parse single array item (typed value, untyped value, or object)
     fn parse_array_item(&mut self) -> Result<Value, Error> {
         match &self.current_token {
             Token::LAngle => {
-                // Typed value in array
+                // Typed value in array: <type>(value)
                 self.parse_typed_single_value()
             }
             Token::LBrace => {
-                // Object in array
+                // Object in array: {...}
                 self.parse_object()
+            }
+            Token::Key(_) => {
+                // Untyped value inferred from token
+                // For arrays like [1 2 3] or [hello world]
+                let content = match &self.current_token {
+                    Token::Key(s) => s.clone(),
+                    _ => unreachable!(),
+                };
+                self.advance()?;
+                self.infer_value(&content)
             }
             _ => Err(Error::new(
                 ErrorKind::UnexpectedToken,
@@ -325,6 +429,36 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse typed array content: [val1 val2 val3]
+    /// Parse untyped array content: [value1 value2 value3] with type inference
+    fn parse_untyped_array_content(&mut self) -> Result<Vec<Value>, Error> {
+        self.expect(Token::LBracket)?;
+
+        let mut items = Vec::new();
+
+        while !matches!(self.current_token, Token::RBracket | Token::Eof) {
+            // Read raw value token
+            let value_str = match &self.current_token {
+                Token::Key(s) | Token::Type(s) => s.clone(),
+                _ => {
+                    return Err(Error::new(
+                        ErrorKind::UnexpectedToken,
+                        self.lexer.current_line(),
+                        self.lexer.current_column(),
+                        "Expected value in array".to_string(),
+                    ))
+                }
+            };
+
+            // Infer type from content
+            let value = self.infer_value(&value_str)?;
+            items.push(value);
+            self.advance()?;
+        }
+
+        self.expect(Token::RBracket)?;
+        Ok(items)
+    }
+
     fn parse_typed_array_content(&mut self, type_hint: &TypeHint) -> Result<Vec<Value>, Error> {
         self.expect(Token::LBracket)?;
 

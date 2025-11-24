@@ -64,7 +64,7 @@ fn serialize_object(
 
         if pretty && i > 0 {
             result.push('\n');
-            result.push_str(&"    ".repeat(indent + 1));
+            result.push_str(&"  ".repeat(indent + 1));
         }
 
         // Determine how to serialize based on value type
@@ -90,9 +90,9 @@ fn serialize_object(
     if pretty {
         format!(
             "{{\n{}{}\n{}}}",
-            "    ".repeat(indent + 1),
+            "  ".repeat(indent + 1),
             result,
-            "    ".repeat(indent)
+            "  ".repeat(indent)
         )
     } else {
         format!("{{{}}}", result)
@@ -111,11 +111,11 @@ fn serialize_array_in_object(arr: &[Value], pretty: bool, indent: usize) -> Stri
         if i > 0 {
             if pretty {
                 result.push('\n');
-                result.push_str(&"    ".repeat(indent + 1));
+                result.push_str(&"  ".repeat(indent + 1));
             }
         } else if pretty {
             result.push('\n');
-            result.push_str(&"    ".repeat(indent + 1));
+            result.push_str(&"  ".repeat(indent + 1));
         }
 
         result.push_str(&serialize_value(value, pretty, indent + 1));
@@ -124,9 +124,9 @@ fn serialize_array_in_object(arr: &[Value], pretty: bool, indent: usize) -> Stri
     if pretty {
         format!(
             "[\n{}{}\n{}]",
-            "    ".repeat(indent + 1),
+            "  ".repeat(indent + 1),
             result,
-            "    ".repeat(indent)
+            "  ".repeat(indent)
         )
     } else {
         format!("[{}]", result)
@@ -154,11 +154,11 @@ fn serialize_array(arr: &[Value], pretty: bool, indent: usize) -> String {
         if i > 0 {
             if pretty {
                 result.push('\n');
-                result.push_str(&"    ".repeat(indent + 1));
+                result.push_str(&"  ".repeat(indent + 1));
             }
         } else if pretty {
             result.push('\n');
-            result.push_str(&"    ".repeat(indent + 1));
+            result.push_str(&"  ".repeat(indent + 1));
         }
 
         result.push_str(&serialize_value(value, pretty, indent + 1));
@@ -167,9 +167,9 @@ fn serialize_array(arr: &[Value], pretty: bool, indent: usize) -> String {
     if pretty {
         format!(
             "[\n{}{}\n{}]",
-            "    ".repeat(indent + 1),
+            "  ".repeat(indent + 1),
             result,
-            "    ".repeat(indent)
+            "  ".repeat(indent)
         )
     } else {
         format!("[{}]", result)

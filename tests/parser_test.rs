@@ -215,10 +215,21 @@ fn t_error_duplicate_key() {
 }
 
 #[test]
-fn t_error_missing_type_hint() {
+fn t_optional_type_hints_in_object() {
+    // Type hints are optional (Ticket #004A) - this should succeed
     let input = "user{name(Alice)}";
     let result = parse(input);
-    assert!(result.is_err());
+    assert!(result.is_ok());
+
+    match result.unwrap() {
+        Value::Object(obj) => match obj.get("user") {
+            Some(Value::Object(user)) => {
+                assert_eq!(user.get("name"), Some(&Value::Str("Alice".to_string())));
+            }
+            _ => panic!("Expected user object"),
+        },
+        _ => panic!("Expected Object"),
+    }
 }
 
 #[test]
