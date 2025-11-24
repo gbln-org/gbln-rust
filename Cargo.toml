@@ -12,5 +12,6 @@ categories = ["parser-implementations", "encoding"]
 readme = "README.md"
 
 [dependencies]
+xz2 = "0.1"  # XZ compression for I/O format
 
 [dev-dependencies]

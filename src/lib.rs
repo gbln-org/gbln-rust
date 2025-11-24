@@ -2,14 +2,18 @@
 //!
 //! A type-safe, LLM-native data serialisation format with parse-time validation.
 
+pub mod config;
 pub mod error;
+pub mod io;
 pub mod lexer;
 pub mod parser;
 pub mod serializer;
 pub mod types;
 pub mod value;
 
+pub use config::GblnConfig;
 pub use error::{Error, ErrorKind};
+pub use io::{read_io, write_io};
 pub use lexer::{Lexer, Token};
 pub use parser::parse;
 pub use serializer::{to_string, to_string_pretty};

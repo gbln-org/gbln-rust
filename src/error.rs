@@ -34,6 +34,9 @@ pub enum ErrorKind {
 
     // Structural errors
     DuplicateKey,
+
+    // I/O errors
+    IoError,
 }
 
 impl Error {
@@ -50,6 +53,23 @@ impl Error {
     pub fn with_suggestion(mut self, suggestion: String) -> Self {
         self.suggestion = Some(suggestion);
         self
+    }
+
+    /// Create an I/O error (no line/column context)
+    pub fn io(message: String) -> Self {
+        Self {
+            kind: ErrorKind::IoError,
+            line: 0,
+            column: 0,
+            message,
+            suggestion: None,
+        }
+    }
+}
+
+impl From<String> for Error {
+    fn from(message: String) -> Self {
+        Self::io(message)
     }
 }
 
