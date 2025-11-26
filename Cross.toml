@@ -1,0 +1,8 @@
+[build]
+default-target = "aarch64-unknown-freebsd"
+
+[target.aarch64-unknown-freebsd]
+build-std = ["core", "alloc", "std", "panic_abort"]
+
+[target.x86_64-unknown-freebsd]
+# Already works without build-std
