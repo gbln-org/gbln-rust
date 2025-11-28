@@ -12,6 +12,15 @@ categories = ["parser-implementations", "encoding"]
 readme = "README.md"
 
 [dependencies]
-xz2 = "0.1"  # XZ compression for I/O format
+# XZ compression for I/O format - optional for WASM compatibility
+xz2 = { version = "0.1", optional = true }
 
 [dev-dependencies]
+
+[features]
+# Default features for native targets (includes compression)
+default = ["compression"]
+
+# XZ compression support (requires native C library)
+# Disabled for WASM targets due to lzma-sys native dependencies
+compression = ["xz2"]

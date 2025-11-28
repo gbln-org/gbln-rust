@@ -7,6 +7,7 @@
 
 pub mod config;
 pub mod error;
+#[cfg(feature = "compression")]
 pub mod io;
 pub mod lexer;
 pub mod parser;
@@ -16,6 +17,7 @@ pub mod value;
 
 pub use config::GblnConfig;
 pub use error::{Error, ErrorKind};
+#[cfg(feature = "compression")]
 pub use io::{read_io, write_io};
 pub use lexer::{Lexer, Token};
 pub use parser::parse;
