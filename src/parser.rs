@@ -436,23 +436,33 @@ impl<'a> Parser<'a> {
         let mut items = Vec::new();
 
         while !matches!(self.current_token, Token::RBracket | Token::Eof) {
-            // Read raw value token
-            let value_str = match &self.current_token {
-                Token::Key(s) | Token::Type(s) => s.clone(),
+            // Parse array item (can be object, typed value, or untyped value)
+            let value = match &self.current_token {
+                Token::LBrace => {
+                    // Object in array: {...}
+                    self.parse_object()?
+                }
+                Token::LAngle => {
+                    // Typed value in array: <type>(value)
+                    self.parse_typed_single_value()?
+                }
+                Token::Key(s) | Token::Type(s) => {
+                    // Untyped value - infer type from content
+                    let value_str = s.clone();
+                    self.advance()?;
+                    self.infer_value(&value_str)?
+                }
                 _ => {
                     return Err(Error::new(
                         ErrorKind::UnexpectedToken,
                         self.lexer.current_line(),
                         self.lexer.current_column(),
-                        "Expected value in array".to_string(),
+                        format!("Expected value in array, found {:?}", self.current_token),
                     ))
                 }
             };
 
-            // Infer type from content
-            let value = self.infer_value(&value_str)?;
             items.push(value);
-            self.advance()?;
         }
 
         self.expect(Token::RBracket)?;
