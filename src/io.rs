@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Vivian Burkhard Voss
+// SPDX-License-Identifier: Apache-2.0
+
 //! File I/O operations for GBLN
 //!
 //! This module provides functions to read and write GBLN files in various formats,

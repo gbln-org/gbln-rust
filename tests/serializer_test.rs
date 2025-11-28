@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Vivian Burkhard Voss
+// SPDX-License-Identifier: Apache-2.0
+
 use gbln::{parse, to_string, to_string_pretty, Value};
 use std::collections::HashMap;
 

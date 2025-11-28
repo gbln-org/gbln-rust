@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Vivian Burkhard Voss
+// SPDX-License-Identifier: Apache-2.0
+
 //! GBLN Serializer
 //!
 //! Converts Value to GBLN string format (compact and pretty).

@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Vivian Burkhard Voss
+// SPDX-License-Identifier: Apache-2.0
+
 //! GBLN Value Representation
 //!
 //! The in-memory representation of parsed GBLN data.

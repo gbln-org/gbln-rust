@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Vivian Burkhard Voss
+// SPDX-License-Identifier: Apache-2.0
+
 //! Integration tests for I/O operations
 //!
 //! Tests write_io() and read_io() functions with various configurations.

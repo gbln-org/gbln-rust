@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Vivian Burkhard Voss
+// SPDX-License-Identifier: Apache-2.0
+
 //! GBLN Error Types
 //!
 //! Detailed error types with line/column information and suggestions.

@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Vivian Burkhard Voss
+// SPDX-License-Identifier: Apache-2.0
+
 //! Integration tests for GBLN Lexer
 
 use gbln::{Lexer, Token};

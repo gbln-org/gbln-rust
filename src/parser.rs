@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Vivian Burkhard Voss
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::error::{Error, ErrorKind};
 use crate::lexer::{Lexer, Token};
 use crate::types::TypeHint;

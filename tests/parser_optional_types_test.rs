@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Vivian Burkhard Voss
+// SPDX-License-Identifier: Apache-2.0
+
 //! Tests for optional type hints (Ticket #004A Phase 1)
 //!
 //! Verifies that the parser correctly handles values WITHOUT type hints,

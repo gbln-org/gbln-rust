@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Vivian Burkhard Voss
+// SPDX-License-Identifier: Apache-2.0
+
 //! GBLN (Goblin Bounded Lean Notation)
 //!
 //! A type-safe, LLM-native data serialisation format with parse-time validation.
