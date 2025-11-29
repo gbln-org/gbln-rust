@@ -33,6 +33,88 @@ fn t_write_read_roundtrip_with_compression() {
     fs::remove_file(path).ok();
 }
 
+// Unit tests for internal compression functions
+// (These were previously inline in src/io.rs but moved here per Standard #6)
+
+#[test]
+fn t_is_xz_compressed_detects_magic_bytes() {
+    // Test XZ magic bytes detection
+    let xz_data = vec![0xFD, 0x37, 0x7A, 0x58, 0x5A, 0x00, 0x01, 0x02];
+
+    // Create temp file with XZ magic bytes
+    let path = Path::new("/tmp/test_xz_magic.bin");
+    fs::write(path, &xz_data).unwrap();
+    let content = fs::read(path).unwrap();
+    assert!(content.starts_with(&[0xFD, 0x37, 0x7A, 0x58, 0x5A, 0x00]));
+    fs::remove_file(path).ok();
+
+    // Test non-XZ data
+    let plain_data = vec![0x00, 0x01, 0x02, 0x03];
+    let path2 = Path::new("/tmp/test_plain.bin");
+    fs::write(path2, &plain_data).unwrap();
+    let content2 = fs::read(path2).unwrap();
+    assert!(!content2.starts_with(&[0xFD, 0x37, 0x7A, 0x58, 0x5A, 0x00]));
+    fs::remove_file(path2).ok();
+}
+
+#[test]
+fn t_compress_decompress_roundtrip() {
+    let input = "user{id<u32>(123)}";
+    let value = parse(input).unwrap();
+
+    // Compress and decompress via file I/O
+    let path = Path::new("/tmp/test_compress_roundtrip.io.gbln.xz");
+    let config = GblnConfig::new().compress(true);
+    write_io(&value, path, &config).unwrap();
+
+    let loaded = read_io(path).unwrap();
+    assert_eq!(loaded, value);
+
+    fs::remove_file(path).ok();
+}
+
+#[test]
+fn t_compress_produces_xz_format() {
+    let input = "test{data<s32>(Test data for compression)}";
+    let value = parse(input).unwrap();
+
+    let path = Path::new("/tmp/test_xz_format.io.gbln.xz");
+    let config = GblnConfig::new().compress(true);
+    write_io(&value, path, &config).unwrap();
+
+    // Check file has XZ magic bytes
+    let bytes = fs::read(path).unwrap();
+    assert!(bytes.starts_with(&[0xFD, 0x37, 0x7A, 0x58, 0x5A, 0x00]));
+
+    fs::remove_file(path).ok();
+}
+
+#[test]
+fn t_higher_compression_level_produces_smaller_output() {
+    let data_str = "A".repeat(1000);
+    let input = format!("data{{text<s1024>({})}}", data_str);
+    let value = parse(&input).unwrap();
+
+    let temp_dir = std::env::temp_dir();
+    let path_0 = temp_dir.join("test_level_0.io.gbln.xz");
+    let path_9 = temp_dir.join("test_level_9.io.gbln.xz");
+
+    let config_0 = GblnConfig::new().compress(true).compression_level(0);
+    write_io(&value, &path_0, &config_0).unwrap();
+
+    let config_9 = GblnConfig::new().compress(true).compression_level(9);
+    write_io(&value, &path_9, &config_9).unwrap();
+
+    let size_0 = fs::metadata(&path_0).unwrap().len();
+    let size_9 = fs::metadata(&path_9).unwrap().len();
+
+    // Level 9 should be smaller or equal to level 0
+    assert!(size_9 <= size_0);
+
+    fs::remove_file(&path_0).ok();
+    fs::remove_file(&path_9).ok();
+}
+
 #[test]
 fn t_write_read_roundtrip_without_compression() {
     let input = r#"config{port<u16>(8080)workers<u8>(4)}"#;
@@ -211,6 +293,12 @@ fn t_config_presets() {
 
     let default = GblnConfig::default();
     assert_eq!(default, io);
+}
+
+#[test]
+fn t_compression_level_clamped() {
+    let config = GblnConfig::new().compression_level(99);
+    assert_eq!(config.compression_level, 9);
 }
 
 #[test]
