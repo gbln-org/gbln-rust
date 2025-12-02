@@ -1,6 +1,6 @@
 [package]
 name = "gbln"
-version = "0.1.0"
+version = "0.9.0"
 edition = "2021"
 authors = ["Vivian Voss <ask+gbln@vvoss.dev>"]
 description = "GBLN (Goblin Bounded Lean Notation) - Type-safe LLM-native data format"
